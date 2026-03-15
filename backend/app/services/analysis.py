@@ -10,6 +10,7 @@ from app.schemas import (
     RiskHeatmapItem,
     SupportedLanguage,
 )
+from app.services.llm import llm_provider
 
 RISK_TERMS = {
     "high": ["penalty", "indemnity", "liability", "termination without notice"],
@@ -65,7 +66,50 @@ LANG_LABELS = {
 }
 
 
-def analyze_document(document_id: str, text: str, language: SupportedLanguage) -> AnalysisResponse:
+async def analyze_document(document_id: str, text: str, language: SupportedLanguage) -> AnalysisResponse:
+    """Analyze document using LLM if available, otherwise fall back to heuristic analysis."""
+    if llm_provider:
+        return await _analyze_with_llm(document_id, text, language)
+    else:
+        return _analyze_heuristic(document_id, text, language)
+
+
+async def _analyze_with_llm(document_id: str, text: str, language: SupportedLanguage) -> AnalysisResponse:
+    """Analyze document using LLM provider."""
+    try:
+        result = await llm_provider.analyze_document(text, language)
+
+        # Convert LLM response to AnalysisResponse format
+        clauses = [
+            Clause(
+                title=c.get("title", ""),
+                details=c.get("details", ""),
+                risk_level=c.get("risk_level", "low"),
+            )
+            for c in result.get("key_clauses", [])
+        ]
+
+        return AnalysisResponse(
+            document_id=document_id,
+            document_type=result.get("document_type", "general_contract"),
+            summary=result.get("summary", ""),
+            key_clauses=clauses,
+            financial_obligations=result.get("financial_obligations", []),
+            risk_alerts=result.get("risk_alerts", []),
+            negotiation_points=result.get("negotiation_points", []),
+            contract_risk_score=result.get("contract_risk_score", 5),
+            risk_heatmap=_build_risk_heatmap(clauses),
+            clause_comparisons=_build_clause_comparisons(clauses),
+            legal_terms_dictionary=_build_legal_dictionary(text.lower()),
+            language=language,
+        )
+    except Exception:
+        # Fall back to heuristic if LLM fails
+        return _analyze_heuristic(document_id, text, language)
+
+
+def _analyze_heuristic(document_id: str, text: str, language: SupportedLanguage) -> AnalysisResponse:
+    """Heuristic analysis (original implementation)."""
     lowered = text.lower()
 
     high_hits = _count_hits(lowered, RISK_TERMS["high"])

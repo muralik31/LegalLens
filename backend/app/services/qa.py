@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from app.schemas import SupportedLanguage
+from app.services.llm import llm_provider
 
 CHAT_PREFIX = {
     "en": "Relevant information from the document: ",
@@ -14,14 +15,24 @@ CHAT_PREFIX = {
 }
 
 
-def answer_question(text: str, question: str, language: SupportedLanguage) -> str:
+async def answer_question(text: str, question: str, language: SupportedLanguage) -> str:
+    """Answer a question about the document using LLM if available."""
+    if llm_provider:
+        try:
+            return await llm_provider.answer_question(text, question, language)
+        except Exception:
+            # Fall back to heuristic
+            pass
+
+    # Heuristic fallback
     snippet = _most_relevant_sentence(text, question)
     return f"{CHAT_PREFIX[language]}{snippet}"
 
 
-def build_chat_reply(text: str, messages: list[str], language: SupportedLanguage) -> str:
+async def build_chat_reply(text: str, messages: list[str], language: SupportedLanguage) -> str:
+    """Build a chat reply based on message history."""
     latest = messages[-1]
-    answer = answer_question(text, latest, language)
+    answer = await answer_question(text, latest, language)
     return answer
 
 
