@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,10 +27,38 @@ class Settings(BaseSettings):
     DATABASE_ECHO: bool = False
 
     # Authentication
-    SECRET_KEY: str = "change-this-in-production-use-openssl-rand-hex-32"
+    SECRET_KEY: str = Field(
+        default="",
+        min_length=32,
+        description="Secret key for JWT signing - MUST be set in production",
+    )
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def validate_secret_key(cls, v: str) -> str:
+        """Validate SECRET_KEY is properly set."""
+        if not v or len(v) < 32:
+            raise ValueError(
+                "SECRET_KEY must be at least 32 characters. "
+                "Generate with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+            )
+        # Check for default/weak values
+        weak_keys = [
+            "change-this",
+            "secret",
+            "password",
+            "12345",
+            "default",
+        ]
+        if any(weak in v.lower() for weak in weak_keys):
+            raise ValueError(
+                "SECRET_KEY appears to be a default/weak value. "
+                "Generate a secure key with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+            )
+        return v
 
     # File Storage
     STORAGE_PROVIDER: Literal["local", "s3", "r2"] = "local"
