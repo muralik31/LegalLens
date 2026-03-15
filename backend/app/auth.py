@@ -89,7 +89,24 @@ async def get_current_user(
             detail="Invalid token type",
         )
 
-    user_id: int | None = payload.get("sub")
+    user_id_str = payload.get("sub")
+    if user_id_str is None:
+        logger.error("missing_user_id", payload=payload)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
+
+    # Convert string to int (JWT sub claim is always string)
+    try:
+        user_id = int(user_id_str)
+    except (ValueError, TypeError) as exc:
+        logger.error("invalid_user_id", user_id_str=user_id_str, error=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        ) from exc
+
     logger.debug("extracted_user_id", user_id=user_id, user_id_type=type(user_id).__name__)
 
     if user_id is None:

@@ -194,9 +194,9 @@ async def login(
             detail="User account is inactive",
         )
 
-    # Create tokens
-    access_token = create_access_token({"sub": user.id})
-    refresh_token = create_refresh_token({"sub": user.id})
+    # Create tokens (sub must be string per JWT spec)
+    access_token = create_access_token({"sub": str(user.id)})
+    refresh_token = create_refresh_token({"sub": str(user.id)})
 
     logger.info("user_logged_in", user_id=user.id, email=user.email)
 
@@ -214,7 +214,22 @@ async def refresh_token(token_data: TokenRefresh, db: AsyncSession = Depends(get
             detail="Invalid token type",
         )
 
-    user_id = payload.get("sub")
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        )
+
+    # Convert string to int (JWT sub claim is always string)
+    try:
+        user_id = int(user_id_str)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        )
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
 
@@ -224,9 +239,9 @@ async def refresh_token(token_data: TokenRefresh, db: AsyncSession = Depends(get
             detail="Invalid user",
         )
 
-    # Create new tokens
-    access_token = create_access_token({"sub": user.id})
-    new_refresh_token = create_refresh_token({"sub": user.id})
+    # Create new tokens (sub must be string per JWT spec)
+    access_token = create_access_token({"sub": str(user.id)})
+    new_refresh_token = create_refresh_token({"sub": str(user.id)})
 
     return Token(access_token=access_token, refresh_token=new_refresh_token)
 
