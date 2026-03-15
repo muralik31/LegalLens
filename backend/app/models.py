@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, DateTime, Enum, Integer, String, Text
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
@@ -60,7 +60,7 @@ class Document(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     document_id: Mapped[str] = mapped_column(String(36), unique=True, nullable=False, index=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
     # File metadata
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
