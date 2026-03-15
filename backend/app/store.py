@@ -18,5 +18,9 @@ class InMemoryDocumentStore:
         with self._lock:
             return self._documents.get(document_id)
 
+    def clear(self) -> None:
+        with self._lock:
+            self._documents.clear()
+
 
 store = InMemoryDocumentStore()

@@ -1,11 +1,7 @@
 from fastapi.testclient import TestClient
 
-from app.main import app
 
-client = TestClient(app)
-
-
-def test_phase2_analysis_supports_marathi_and_extra_outputs() -> None:
+def test_phase2_analysis_supports_marathi_and_extra_outputs(client: TestClient) -> None:
     upload = client.post(
         "/upload",
         files={
@@ -33,7 +29,7 @@ def test_phase2_analysis_supports_marathi_and_extra_outputs() -> None:
     assert body["legal_terms_dictionary"]
 
 
-def test_phase2_chat_endpoint() -> None:
+def test_phase2_chat_endpoint(client: TestClient) -> None:
     upload = client.post(
         "/upload",
         files={
@@ -54,7 +50,7 @@ def test_phase2_chat_endpoint() -> None:
     assert "notice" in response.json()["reply"].lower()
 
 
-def test_disclaimer_endpoint_exists() -> None:
+def test_disclaimer_endpoint_exists(client: TestClient) -> None:
     response = client.get("/disclaimer")
     assert response.status_code == 200
     assert "not legal advice" in response.json()["disclaimer"].lower()
