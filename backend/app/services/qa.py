@@ -4,12 +4,25 @@ import re
 
 from app.schemas import SupportedLanguage
 
+CHAT_PREFIX = {
+    "en": "Relevant information from the document: ",
+    "hi": "दस्तावेज़ में संबंधित जानकारी: ",
+    "te": "పత్రంలో సంబంధించిన సమాచారం: ",
+    "ta": "ஆவணத்தில் தொடர்புடைய தகவல்: ",
+    "kn": "ದಸ್ತಾವೇಜಿನಲ್ಲಿ ಸಂಬಂಧಿತ ಮಾಹಿತಿ: ",
+    "mr": "दस्तऐवजातील संबंधित माहिती: ",
+}
+
 
 def answer_question(text: str, question: str, language: SupportedLanguage) -> str:
     snippet = _most_relevant_sentence(text, question)
-    if language == "hi":
-        return f"दस्तावेज़ में संबंधित जानकारी: {snippet}"
-    return f"Relevant information from the document: {snippet}"
+    return f"{CHAT_PREFIX[language]}{snippet}"
+
+
+def build_chat_reply(text: str, messages: list[str], language: SupportedLanguage) -> str:
+    latest = messages[-1]
+    answer = answer_question(text, latest, language)
+    return answer
 
 
 def _most_relevant_sentence(text: str, question: str) -> str:

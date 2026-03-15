@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-SupportedLanguage = Literal["en", "hi"]
+SupportedLanguage = Literal["en", "hi", "te", "ta", "kn", "mr"]
 
 
 class UploadResponse(BaseModel):
@@ -28,6 +28,23 @@ class Clause(BaseModel):
     risk_level: Literal["low", "medium", "high"]
 
 
+class ClauseBenchmark(BaseModel):
+    clause_title: str
+    market_standard: str
+    document_value: str
+    assessment: Literal["favorable", "neutral", "needs_attention"]
+
+
+class RiskHeatmapItem(BaseModel):
+    clause_title: str
+    risk_level: Literal["low", "medium", "high"]
+
+
+class LegalTermDefinition(BaseModel):
+    term: str
+    plain_explanation: str
+
+
 class AnalysisResponse(BaseModel):
     document_id: str
     document_type: str
@@ -37,6 +54,9 @@ class AnalysisResponse(BaseModel):
     risk_alerts: list[str]
     negotiation_points: list[str]
     contract_risk_score: int = Field(..., ge=1, le=10)
+    risk_heatmap: list[RiskHeatmapItem]
+    clause_comparisons: list[ClauseBenchmark]
+    legal_terms_dictionary: list[LegalTermDefinition]
     language: SupportedLanguage
 
 
@@ -58,4 +78,16 @@ class AskQuestionRequest(BaseModel):
 class AskQuestionResponse(BaseModel):
     document_id: str
     answer: str
+    language: SupportedLanguage
+
+
+class ChatRequest(BaseModel):
+    document_id: str
+    messages: list[str] = Field(..., min_length=1)
+    language: SupportedLanguage = "en"
+
+
+class ChatResponse(BaseModel):
+    document_id: str
+    reply: str
     language: SupportedLanguage

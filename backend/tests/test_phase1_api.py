@@ -1,11 +1,7 @@
 from fastapi.testclient import TestClient
 
-from app.main import app
 
-client = TestClient(app)
-
-
-def test_upload_analyze_and_fetch_document() -> None:
+def test_upload_analyze_fetch_and_question(client: TestClient) -> None:
     upload = client.post(
         "/upload",
         files={
@@ -25,14 +21,29 @@ def test_upload_analyze_and_fetch_document() -> None:
     assert body["contract_risk_score"] >= 3
     assert body["document_type"] == "rental_agreement"
 
+    ask = client.post(
+        "/ask-question",
+        json={"document_id": document_id, "question": "What is the rent?", "language": "en"},
+    )
+    assert ask.status_code == 200
+    assert "rent" in ask.json()["answer"].lower()
+
     fetch = client.get(f"/document/{document_id}")
     assert fetch.status_code == 200
     assert fetch.json()["analysis"]["document_id"] == document_id
 
 
-def test_upload_rejects_unsupported_content_type() -> None:
+def test_upload_rejects_unsupported_content_type(client: TestClient) -> None:
     response = client.post(
         "/upload",
         files={"file": ("malware.bin", b"x", "application/octet-stream")},
+    )
+    assert response.status_code == 400
+
+
+def test_upload_rejects_empty_file(client: TestClient) -> None:
+    response = client.post(
+        "/upload",
+        files={"file": ("empty.txt", b"", "text/plain")},
     )
     assert response.status_code == 400
