@@ -127,7 +127,7 @@ async def get_disclaimer() -> dict[str, str]:
 # ============= Authentication Endpoints =============
 
 
-@app.post("/auth/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@app.post("/auth/register", response_model="UserResponse", status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/hour")  # Limit registration attempts
 async def register_user(
     request: Request,
@@ -171,7 +171,7 @@ async def register_user(
     )
 
 
-@app.post("/auth/login", response_model=Token)
+@app.post("/auth/login", response_model="Token")
 @limiter.limit("5/minute")  # Prevent brute force attacks
 async def login(
     request: Request,
@@ -204,7 +204,7 @@ async def login(
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 
-@app.post("/auth/refresh", response_model=Token)
+@app.post("/auth/refresh", response_model="Token")
 async def refresh_token(token_data: TokenRefresh, db: AsyncSession = Depends(get_db)) -> Token:
     """Refresh access token using refresh token."""
     payload = decode_token(token_data.refresh_token)
@@ -232,7 +232,7 @@ async def refresh_token(token_data: TokenRefresh, db: AsyncSession = Depends(get
     return Token(access_token=access_token, refresh_token=new_refresh_token)
 
 
-@app.get("/auth/me", response_model=UserResponse)
+@app.get("/auth/me", response_model="UserResponse")
 async def get_current_user_info(current_user: User = Depends(get_current_user)) -> UserResponse:
     """Get current user information."""
     return UserResponse(
@@ -249,7 +249,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)) 
 # ============= Document Endpoints =============
 
 
-@app.post("/upload", response_model=UploadResponse)
+@app.post("/upload", response_model="UploadResponse")
 @limiter.limit("10/minute")  # Limit upload rate
 async def upload_document(
     request: Request,
@@ -349,7 +349,7 @@ async def upload_document(
     )
 
 
-@app.post("/analyze", response_model=AnalysisResponse)
+@app.post("/analyze", response_model="AnalysisResponse")
 async def analyze(
     request: AnalyzeRequest,
     current_user: User = Depends(get_current_user),
@@ -457,7 +457,7 @@ async def get_document(
     }
 
 
-@app.post("/ask-question", response_model=AskQuestionResponse)
+@app.post("/ask-question", response_model="AskQuestionResponse")
 async def ask_question_endpoint(
     request: AskQuestionRequest,
     current_user: User = Depends(get_current_user),
@@ -491,7 +491,7 @@ async def ask_question_endpoint(
     )
 
 
-@app.post("/chat", response_model=ChatResponse)
+@app.post("/chat", response_model="ChatResponse")
 async def chat_endpoint(
     request: ChatRequest,
     current_user: User = Depends(get_current_user),
