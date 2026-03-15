@@ -11,13 +11,19 @@ from app.config import settings
 # Base class for models
 Base = declarative_base()
 
+# Convert DATABASE_URL to use async driver
+database_url = settings.DATABASE_URL
+if database_url.startswith("postgresql://"):
+    # Render and most providers use postgresql://, but we need postgresql+asyncpg:// for async
+    database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
 # Create async engine with conditional pooling (SQLite doesn't support pooling)
 engine_kwargs = {
     "echo": settings.DATABASE_ECHO,
 }
 
 # Only add pooling for PostgreSQL, not SQLite
-if "sqlite" not in settings.DATABASE_URL:
+if "sqlite" not in database_url:
     engine_kwargs.update({
         "pool_pre_ping": True,
         "pool_size": 5,
@@ -25,7 +31,7 @@ if "sqlite" not in settings.DATABASE_URL:
     })
 
 async_engine = create_async_engine(
-    settings.DATABASE_URL,
+    database_url,
     **engine_kwargs
 )
 
