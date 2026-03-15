@@ -53,13 +53,18 @@ def create_refresh_token(data: dict[str, Any]) -> str:
 
 def decode_token(token: str) -> dict[str, Any]:
     """Decode and verify a JWT token."""
+    import structlog
+    logger = structlog.get_logger()
+
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        logger.debug("token_decoded", payload_keys=list(payload.keys()), token_type=payload.get("type"))
         return payload
     except JWTError as exc:
+        logger.error("token_decode_failed", error=str(exc), error_type=type(exc).__name__)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
+            detail=f"Could not validate credentials: {type(exc).__name__}",
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
 
@@ -69,17 +74,26 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """Get the current authenticated user."""
+    import structlog
+    logger = structlog.get_logger()
+
     token = credentials.credentials
+    logger.debug("validating_token", token_prefix=token[:20] if len(token) > 20 else token)
+
     payload = decode_token(token)
 
     if payload.get("type") != "access":
+        logger.error("invalid_token_type", token_type=payload.get("type"))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token type",
         )
 
     user_id: int | None = payload.get("sub")
+    logger.debug("extracted_user_id", user_id=user_id, user_id_type=type(user_id).__name__)
+
     if user_id is None:
+        logger.error("missing_user_id", payload=payload)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -89,17 +103,20 @@ async def get_current_user(
     user = result.scalar_one_or_none()
 
     if user is None:
+        logger.error("user_not_found", user_id=user_id)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
 
     if not user.is_active:
+        logger.error("user_inactive", user_id=user_id)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Inactive user",
         )
 
+    logger.debug("user_authenticated", user_id=user.id, email=user.email)
     return user
 
 
