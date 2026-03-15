@@ -1,4 +1,34 @@
 services:
+  # Backend - FastAPI
+  - type: web
+    name: legallens-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: chmod +x render_build.sh && ./render_build.sh
+    startCommand: uvicorn app.main_v3:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: legallens-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: APP_NAME
+        value: LegalLens
+      - key: DEBUG
+        value: false
+      - key: LLM_PROVIDER
+        value: local
+      - key: STORAGE_PROVIDER
+        value: local
+      - key: CORS_ORIGINS
+        value: '["https://legallens-frontend.onrender.com","http://localhost:3000"]'
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    rootDir: backend
+    healthCheckPath: /health
+
   # Frontend - Next.js
   - type: web
     name: legallens-frontend
@@ -9,7 +39,7 @@ services:
     startCommand: npm start
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        sync: false  # Set manually in Render dashboard
+        value: https://legallens-backend.onrender.com
       - key: NEXT_PUBLIC_APP_NAME
         value: LegalLens
       - key: NODE_VERSION
@@ -17,29 +47,9 @@ services:
     rootDir: frontend
     healthCheckPath: /
 
-  # Backend - FastAPI (uncomment when ready to deploy)
-  # - type: web
-  #   name: legallens-backend
-  #   env: python
-  #   region: oregon
-  #   plan: free
-  #   buildCommand: pip install -r requirements.txt
-  #   startCommand: uvicorn app.main_v3:app --host 0.0.0.0 --port $PORT
-  #   envVars:
-  #     - key: DATABASE_URL
-  #       sync: false  # Set from Render PostgreSQL addon
-  #     - key: SECRET_KEY
-  #       generateValue: true
-  #     - key: LLM_PROVIDER
-  #       value: local
-  #     - key: STORAGE_PROVIDER
-  #       value: local
-  #   rootDir: backend
-
 databases:
-  # PostgreSQL database (uncomment when deploying backend)
-  # - name: legallens-db
-  #   databaseName: legallens
-  #   user: legallens
-  #   region: oregon
-  #   plan: free
+  - name: legallens-db
+    databaseName: legallens
+    user: legallens
+    region: oregon
+    plan: free
