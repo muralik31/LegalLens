@@ -23,13 +23,11 @@ export default function LoginPage() {
       const response = await api.post('/auth/login', { email, password });
       const { access_token, refresh_token } = response.data;
 
+      // Store tokens first
       localStorage.setItem('access_token', access_token);
       localStorage.setItem('refresh_token', refresh_token);
 
-      // Fetch user data
-      const userResponse = await api.get('/auth/me');
-      setUser(userResponse.data);
-
+      // Navigate to dashboard - it will fetch user data
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Login failed');
