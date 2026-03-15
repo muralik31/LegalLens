@@ -1,0 +1,45 @@
+services:
+  # Frontend - Next.js
+  - type: web
+    name: legallens-frontend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false  # Set manually in Render dashboard
+      - key: NEXT_PUBLIC_APP_NAME
+        value: LegalLens
+      - key: NODE_VERSION
+        value: 18.17.0
+    rootDir: frontend
+    healthCheckPath: /
+
+  # Backend - FastAPI (uncomment when ready to deploy)
+  # - type: web
+  #   name: legallens-backend
+  #   env: python
+  #   region: oregon
+  #   plan: free
+  #   buildCommand: pip install -r requirements.txt
+  #   startCommand: uvicorn app.main_v3:app --host 0.0.0.0 --port $PORT
+  #   envVars:
+  #     - key: DATABASE_URL
+  #       sync: false  # Set from Render PostgreSQL addon
+  #     - key: SECRET_KEY
+  #       generateValue: true
+  #     - key: LLM_PROVIDER
+  #       value: local
+  #     - key: STORAGE_PROVIDER
+  #       value: local
+  #   rootDir: backend
+
+databases:
+  # PostgreSQL database (uncomment when deploying backend)
+  # - name: legallens-db
+  #   databaseName: legallens
+  #   user: legallens
+  #   region: oregon
+  #   plan: free
